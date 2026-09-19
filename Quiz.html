@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kopfrechnen – 1×1 bis 12×12</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f2f4f7;
+    color: #222;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .app {
+    width: min(900px, 94vw);
+    background: white;
+    border-radius: 18px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.12);
+    padding: 28px;
+  }
+  h1, h2 { margin-top: 0; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .start-box {
+    max-width: 520px;
+    margin: 20px auto;
+    text-align: center;
+  }
+  input[type="text"] {
+    width: 100%;
+    padding: 14px;
+    font-size: 20px;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    margin: 12px 0;
+  }
+  button {
+    border: 0;
+    border-radius: 10px;
+    padding: 13px 20px;
+    font-size: 18px;
+    cursor: pointer;
+    background: #222;
+    color: white;
+  }
+  button:hover { opacity: .88; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+
+  .topbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 30px;
+  }
+  .stat {
+    background: #f1f3f5;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat strong {
+    display: block;
+    font-size: 28px;
+    margin-top: 4px;
+  }
+  #timer.warning { font-weight: bold; }
+
+  .question {
+    text-align: center;
+    font-size: clamp(42px, 8vw, 72px);
+    font-weight: bold;
+    margin: 25px 0;
+  }
+  .answer-display {
+    width: 240px;
+    min-height: 62px;
+    margin: 0 auto 20px;
+    border: 3px solid #222;
+    border-radius: 12px;
+    font-size: 40px;
+    text-align: center;
+    padding: 6px;
+    background: #fff;
+  }
+  .keypad {
+    width: min(330px, 100%);
+    margin: auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 9px;
+  }
+  .keypad button {
+    font-size: 27px;
+    padding: 16px 8px;
+    background: #343a40;
+  }
+  .keypad .clear { background: #6c757d; }
+  .keypad .submit { background: #198754; }
+  .feedback {
+    min-height: 34px;
+    text-align: center;
+    font-size: 21px;
+    font-weight: bold;
+    margin: 12px 0;
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .result-card {
+    text-align: center;
+    background: #f1f3f5;
+    border-radius: 12px;
+    padding: 15px;
+  }
+  .result-card .big {
+    display: block;
+    font-size: 34px;
+    font-weight: bold;
+  }
+  .ranking {
+    margin-top: 30px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+  }
+  th, td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+  }
+  th:first-child, td:first-child { text-align: left; }
+  .actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 22px;
+  }
+  .secondary { background: #6c757d; }
+
+  @media (max-width: 600px) {
+    .app { padding: 18px; }
+    .topbar, .result-grid { grid-template-columns: 1fr 1fr; }
+    .topbar .stat:last-child { grid-column: 1 / -1; }
+    th, td { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- START -->
+  <section id="startScreen" class="screen active">
+    <div class="start-box">
+      <h1>🧠 Kopfrechnen</h1>
+      <p><strong>Das kleine 1×1 bis 12×12</strong></p>
+      <p>Du hast <strong>60 Sekunden</strong> Zeit.<br>
+         Für jede richtige Antwort gibt es <strong>+1 Punkt</strong>.<br>
+         Für jede falsche Antwort gibt es <strong>−1 Punkt</strong>.</p>
+
+      <input id="nameInput" type="text" maxlength="30"
+             placeholder="Dein Name" autocomplete="off">
+
+      <button id="startButton">Quiz starten</button>
+    </div>
+
+    <div class="ranking">
+      <h2>🏆 Rangliste</h2>
+      <div id="rankingContainer"></div>
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="quizScreen" class="screen">
+    <div class="topbar">
+      <div class="stat">
+        Zeit
+        <strong id="timer">60</strong>
+      </div>
+      <div class="stat">
+        Richtig
+        <strong id="correctCount">0</strong>
+      </div>
+      <div class="stat">
+        Falsch
+        <strong id="wrongCount">0</strong>
+      </div>
+    </div>
+
+    <div id="question" class="question">7 × 8 = ?</div>
+
+    <div id="answerDisplay" class="answer-display">&nbsp;</div>
+
+    <div class="feedback" id="feedback"></div>
+
+    <div class="keypad">
+      <button data-key="1">1</button>
+      <button data-key="2">2</button>
+      <button data-key="3">3</button>
+      <button data-key="4">4</button>
+      <button data-key="5">5</button>
+      <button data-key="6">6</button>
+      <button data-key="7">7</button>
+      <button data-key="8">8</button>
+      <button data-key="9">9</button>
+      <button class="clear" data-key="clear">⌫</button>
+      <button data-key="0">0</button>
+      <button class="submit" data-key="submit">✓</button>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="resultScreen" class="screen">
+    <div class="start-box">
+      <h1>⏱️ Zeit ist um!</h1>
+      <p id="resultName"></p>
+    </div>
+
+    <div class="result-grid">
+      <div class="result-card">
+        Punkte
+        <span id="finalScore" class="big">0</span>
+      </div>
+      <div class="result-card">
+        Richtig
+        <span id="finalCorrect" class="big">0</span>
+      </div>
+      <div class="result-card">
+        Falsch
+        <span id="finalWrong" class="big">0</span>
+      </div>
+    </div>
+
+    <p id="resultDetails" style="text-align:center;"></p>
+
+    <div class="ranking">
+      <h2>🏆 Rangliste</h2>
+      <div id="resultRankingContainer"></div>
+    </div>
+
+    <div class="actions">
+      <button id="againButton">Nochmal spielen</button>
+      <button id="homeButton" class="secondary">Zur Startseite</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+"use strict";
+
+// ============================================================
+// KOPFRECHNEN 1×1 BIS 12×12
+// 60 Sekunden | +1 richtig | -1 falsch
+// Rangliste wird im Browser gespeichert.
+// ============================================================
+
+const TIME_LIMIT = 60;
+const MAX_FACTOR = 12;
+const STORAGE_KEY = "kopfrechnen_rangliste_v1";
+
+let playerName = "";
+let factorA = 1;
+let factorB = 1;
+let correctAnswer = 1;
+let currentInput = "";
+
+let correctCount = 0;
+let wrongCount = 0;
+let score = 0;
+let timeLeft = TIME_LIMIT;
+let timerInterval = null;
+let quizRunning = false;
+
+// DOM
+const startScreen = document.getElementById("startScreen");
+const quizScreen = document.getElementById("quizScreen");
+const resultScreen = document.getElementById("resultScreen");
+
+const nameInput = document.getElementById("nameInput");
+const startButton = document.getElementById("startButton");
+
+const timerEl = document.getElementById("timer");
+const correctCountEl = document.getElementById("correctCount");
+const wrongCountEl = document.getElementById("wrongCount");
+
+const questionEl = document.getElementById("question");
+const answerDisplay = document.getElementById("answerDisplay");
+const feedbackEl = document.getElementById("feedback");
+
+const resultName = document.getElementById("resultName");
+const finalScore = document.getElementById("finalScore");
+const finalCorrect = document.getElementById("finalCorrect");
+const finalWrong = document.getElementById("finalWrong");
+const resultDetails = document.getElementById("resultDetails");
+
+const rankingContainer = document.getElementById("rankingContainer");
+const resultRankingContainer = document.getElementById("resultRankingContainer");
+
+
+// ------------------------------------------------------------
+// HILFSFUNKTIONEN
+// ------------------------------------------------------------
+
+function showScreen(screen) {
+  [startScreen, quizScreen, resultScreen].forEach(s => {
+    s.classList.remove("active");
+  });
+  screen.classList.add("active");
+}
+
+function randomFactor() {
+  return Math.floor(Math.random() * MAX_FACTOR) + 1;
+}
+
+function newQuestion() {
+  factorA = randomFactor();
+  factorB = randomFactor();
+  correctAnswer = factorA * factorB;
+
+  questionEl.textContent = `${factorA} × ${factorB} = ?`;
+
+  currentInput = "";
+  updateAnswerDisplay();
+  feedbackEl.textContent = "";
+}
+
+function updateAnswerDisplay() {
+  answerDisplay.textContent = currentInput || "\u00A0";
+}
+
+function updateStats() {
+  correctCountEl.textContent = correctCount;
+  wrongCountEl.textContent = wrongCount;
+}
+
+function updateTimer() {
+  timerEl.textContent = timeLeft;
+
+  if (timeLeft <= 10) {
+    timerEl.classList.add("warning");
+  } else {
+    timerEl.classList.remove("warning");
+  }
+}
+
+
+// ------------------------------------------------------------
+// QUIZ STARTEN
+// ------------------------------------------------------------
+
+function startQuiz() {
+  const enteredName = nameInput.value.trim();
+
+  if (!enteredName) {
+    alert("Bitte gib zuerst deinen Namen ein.");
+    nameInput.focus();
+    return;
+  }
+
+  playerName = enteredName;
+
+  correctCount = 0;
+  wrongCount = 0;
+  score = 0;
+  timeLeft = TIME_LIMIT;
+  quizRunning = true;
+
+  updateStats();
+  updateTimer();
+  showScreen(quizScreen);
+  newQuestion();
+
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimer();
+
+    if (timeLeft <= 0) {
+      finishQuiz();
+    }
+  }, 1000);
+}
+
+
+// ------------------------------------------------------------
+// EINGABE
+// ------------------------------------------------------------
+
+function addDigit(digit) {
+  if (!quizRunning) return;
+
+  // Maximal drei Stellen – 12×12 ergibt höchstens 144.
+  if (currentInput.length >= 3) return;
+
+  currentInput += digit;
+  updateAnswerDisplay();
+}
+
+function clearInput() {
+  if (!quizRunning) return;
+
+  currentInput = currentInput.slice(0, -1);
+  updateAnswerDisplay();
+}
+
+function submitAnswer() {
+  if (!quizRunning) return;
+
+  // Leere Eingabe wird nicht als falsch gewertet.
+  if (currentInput === "") return;
+
+  const userAnswer = Number(currentInput);
+
+  if (userAnswer === correctAnswer) {
+    correctCount++;
+    score++;
+    feedbackEl.textContent = "✓ Richtig!";
+  } else {
+    wrongCount++;
+    score--;
+    feedbackEl.textContent = `✗ Falsch – richtig wäre ${correctAnswer}.`;
+  }
+
+  updateStats();
+
+  // Kurze Anzeige des Ergebnisses, dann direkt weiter.
+  setTimeout(() => {
+    if (quizRunning) newQuestion();
+  }, 120);
+}
+
+
+// ------------------------------------------------------------
+// QUIZ BEENDEN
+// ------------------------------------------------------------
+
+function finishQuiz() {
+  if (!quizRunning) return;
+
+  quizRunning = false;
+  clearInterval(timerInterval);
+
+  saveResult();
+
+  resultName.textContent = `Ergebnis von ${playerName}`;
+  finalScore.textContent = score;
+  finalCorrect.textContent = correctCount;
+  finalWrong.textContent = wrongCount;
+
+  const answered = correctCount + wrongCount;
+  resultDetails.textContent =
+    `Insgesamt beantwortet: ${answered} Aufgaben · Punktestand: ${score}`;
+
+  renderRanking(resultRankingContainer);
+  showScreen(resultScreen);
+}
+
+
+// ------------------------------------------------------------
+// RANGLISTE
+// ------------------------------------------------------------
+
+function getRanking() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveResult() {
+  const ranking = getRanking();
+
+  ranking.push({
+    name: playerName,
+    score: score,
+    correct: correctCount,
+    wrong: wrongCount,
+    answered: correctCount + wrongCount,
+    date: new Date().toLocaleDateString("de-DE")
+  });
+
+  // Höchste Punktzahl zuerst.
+  // Bei gleicher Punktzahl: mehr richtige Antworten zuerst.
+  // Danach: weniger falsche Antworten zuerst.
+  ranking.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    if (b.correct !== a.correct) return b.correct - a.correct;
+    return a.wrong - b.wrong;
+  });
+
+  // Die letzten 50 Ergebnisse werden behalten.
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(ranking.slice(0, 50))
+  );
+}
+
+function renderRanking(container) {
+  const ranking = getRanking();
+
+  if (ranking.length === 0) {
+    container.innerHTML = "<p>Noch keine Ergebnisse vorhanden.</p>";
+    return;
+  }
+
+  // Maximal die besten 10 Ergebnisse anzeigen.
+  const top10 = ranking.slice(0, 10);
+
+  let html = `
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Punkte</th>
+          <th>✓</th>
+          <th>✗</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  top10.forEach((entry, index) => {
+    html += `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${escapeHtml(entry.name)}</td>
+        <td><strong>${entry.score}</strong></td>
+        <td>${entry.correct}</td>
+        <td>${entry.wrong}</td>
+      </tr>
+    `;
+  });
+
+  html += "</tbody></table>";
+  container.innerHTML = html;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+
+// ------------------------------------------------------------
+// BUTTONS / TASTATUR
+// ------------------------------------------------------------
+
+document.querySelectorAll(".keypad button").forEach(button => {
+  button.addEventListener("click", () => {
+    const key = button.dataset.key;
+
+    if (key === "clear") {
+      clearInput();
+    } else if (key === "submit") {
+      submitAnswer();
+    } else {
+      addDigit(key);
+    }
+  });
+});
+
+document.addEventListener("keydown", event => {
+  if (!quizRunning) return;
+
+  if (/^[0-9]$/.test(event.key)) {
+    addDigit(event.key);
+  } else if (event.key === "Backspace") {
+    clearInput();
+  } else if (event.key === "Enter") {
+    submitAnswer();
+  }
+});
+
+startButton.addEventListener("click", startQuiz);
+
+nameInput.addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    startQuiz();
+  }
+});
+
+document.getElementById("againButton").addEventListener("click", () => {
+  nameInput.value = playerName;
+  showScreen(startScreen);
+  renderRanking(rankingContainer);
+  nameInput.focus();
+});
+
+document.getElementById("homeButton").addEventListener("click", () => {
+  nameInput.value = "";
+  showScreen(startScreen);
+  renderRanking(rankingContainer);
+});
+
+
+// ------------------------------------------------------------
+// INITIALISIERUNG
+// ------------------------------------------------------------
+
+renderRanking(rankingContainer);
+</script>
+
+</body>
+</html>
