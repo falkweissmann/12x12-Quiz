@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kopfrechnen – 1×1 bis 12×12</title>
+<title>Kopfrechnen – 1·1 bis 12·12</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -166,7 +166,7 @@
   <section id="startScreen" class="screen active">
     <div class="start-box">
       <h1>🧠 Kopfrechnen</h1>
-      <p><strong>Das kleine 1×1 bis 12×12</strong></p>
+      <p><strong>Das kleine 1·1 bis 12·12</strong></p>
       <p>Du hast <strong>60 Sekunden</strong> Zeit.<br>
          Für jede richtige Antwort gibt es <strong>+1 Punkt</strong>.<br>
          Für jede falsche Antwort gibt es <strong>−1 Punkt</strong>.</p>
@@ -200,7 +200,7 @@
       </div>
     </div>
 
-    <div id="question" class="question">7 × 8 = ?</div>
+    <div id="question" class="question">7 · 8 = ?</div>
 
     <div id="answerDisplay" class="answer-display">&nbsp;</div>
 
@@ -263,7 +263,7 @@
 "use strict";
 
 // ============================================================
-// KOPFRECHNEN 1×1 BIS 12×12
+// KOPFRECHNEN 1·1 BIS 12·12
 // 60 Sekunden | +1 richtig | -1 falsch
 // Rangliste wird im Browser gespeichert.
 // ============================================================
@@ -331,7 +331,7 @@ function newQuestion() {
   factorB = randomFactor();
   correctAnswer = factorA * factorB;
 
-  questionEl.textContent = `${factorA} × ${factorB} = ?`;
+  questionEl.textContent = `${factorA} · ${factorB} = ?`;
 
   currentInput = "";
   updateAnswerDisplay();
@@ -403,7 +403,7 @@ function startQuiz() {
 function addDigit(digit) {
   if (!quizRunning) return;
 
-  // Maximal drei Stellen – 12×12 ergibt höchstens 144.
+  // Maximal drei Stellen – 12·12 ergibt höchstens 144.
   if (currentInput.length >= 3) return;
 
   currentInput += digit;
